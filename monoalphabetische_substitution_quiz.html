@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz – Monoalphabetische Substitution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #e8eaf6;
+    --text2: #8b90b0;
+    --text3: #5a5f7a;
+    --green: #4ade80;
+    --green-bg: rgba(74,222,128,0.1);
+    --green-border: rgba(74,222,128,0.3);
+    --red: #f87171;
+    --red-bg: rgba(248,113,113,0.1);
+    --red-border: rgba(248,113,113,0.3);
+    --accent: #7c6ff7;
+    --accent-bg: rgba(124,111,247,0.12);
+    --blue: #60a5fa;
+    --blue-bg: rgba(96,165,250,0.1);
+    --blue-border: rgba(96,165,250,0.3);
+    --amber: #fbbf24;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* HEADER */
+  header {
+    width: 100%;
+    max-width: 860px;
+    padding: 2rem 2rem 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .school-badge {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.6;
+  }
+  .qr-trigger {
+    padding: 6px 14px;
+    border: 0.5px solid var(--border2);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    font-family: var(--font);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .qr-trigger:hover { background: var(--surface); color: var(--text); }
+
+  /* QR MODAL */
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 360px;
+    max-width: 90vw;
+  }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 0.5rem; }
+  .modal p { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; line-height: 1.6; }
+  .url-input-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .url-input {
+    flex: 1;
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .url-input:focus { outline: none; border-color: var(--accent); }
+  .gen-btn {
+    padding: 8px 14px;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 13px;
+    font-family: var(--font);
+    cursor: pointer;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .gen-btn:hover { opacity: 0.85; }
+  #qr-output { display: flex; justify-content: center; margin: 1rem 0; }
+  #qr-output canvas, #qr-output img { border-radius: 8px; }
+  .modal-close {
+    width: 100%;
+    padding: 8px;
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text2);
+    font-size: 13px;
+    font-family: var(--font);
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+  .modal-close:hover { background: var(--surface2); }
+  .hint-box {
+    background: var(--blue-bg);
+    border: 0.5px solid var(--blue-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--blue);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+  .hint-box a { color: var(--blue); }
+
+  /* MAIN */
+  main {
+    width: 100%;
+    max-width: 860px;
+    padding: 1.5rem 2rem 3rem;
+  }
+  .title-row {
+    margin-bottom: 2rem;
+  }
+  .title-row h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 0.35rem;
+  }
+  .title-row .subtitle {
+    font-size: 14px;
+    color: var(--text2);
+  }
+
+  /* PROGRESS */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .progress-track {
+    flex: 1;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 4px;
+  }
+  .progress-fill {
+    height: 4px;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+  .score-badge {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    margin-bottom: 1rem;
+  }
+  .q-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .q-num {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    letter-spacing: 0.06em;
+  }
+  .diff-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .diff-1 { background: var(--green-bg); color: var(--green); }
+  .diff-2 { background: var(--blue-bg); color: var(--blue); }
+  .diff-3 { background: rgba(251,191,36,0.12); color: var(--amber); }
+  .q-text {
+    font-size: 17px;
+    color: var(--text);
+    line-height: 1.65;
+    margin-bottom: 1.25rem;
+  }
+  .q-text strong {
+    font-family: var(--mono);
+    color: var(--amber);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  /* KEY TABLE */
+  .table-wrap { overflow-x: auto; margin-bottom: 1.25rem; }
+  .key-table {
+    border-collapse: collapse;
+    font-size: 11.5px;
+    font-family: var(--mono);
+    min-width: 600px;
+  }
+  .key-table th, .key-table td {
+    border: 0.5px solid var(--border);
+    padding: 4px 7px;
+    text-align: center;
+    min-width: 24px;
+  }
+  .key-table th {
+    background: var(--surface2);
+    color: var(--text2);
+    font-weight: 500;
+  }
+  .key-table td { color: var(--text); }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .opt-btn {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 15px;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+    line-height: 1.55;
+  }
+  .opt-btn:hover:not(:disabled) {
+    background: rgba(124,111,247,0.08);
+    border-color: rgba(124,111,247,0.3);
+    color: var(--text);
+  }
+  .opt-btn.correct {
+    background: var(--green-bg);
+    border-color: var(--green-border);
+    color: var(--green);
+  }
+  .opt-btn.wrong {
+    background: var(--red-bg);
+    border-color: var(--red-border);
+    color: var(--red);
+  }
+  .opt-btn:disabled { cursor: default; }
+
+  /* TEXT INPUT */
+  .input-row { display: flex; gap: 8px; }
+  .ans-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .ans-input:focus { outline: none; border-color: var(--accent); }
+  .check-btn {
+    padding: 10px 20px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-family: var(--font);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .check-btn:hover { opacity: 0.85; }
+  .check-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* FEEDBACK */
+  .feedback {
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.65;
+    margin-top: 10px;
+  }
+  .feedback.ok { background: var(--green-bg); border: 0.5px solid var(--green-border); color: var(--green); }
+  .feedback.bad { background: var(--red-bg); border: 0.5px solid var(--red-border); color: var(--red); }
+  .tip {
+    border-left: 2px solid var(--blue);
+    background: var(--blue-bg);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--blue);
+    margin-top: 8px;
+    line-height: 1.65;
+    border-radius: 0 8px 8px 0;
+  }
+  .answer-reveal {
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 8px;
+    line-height: 1.65;
+  }
+  .answer-reveal strong { color: var(--text); font-family: var(--mono); }
+
+  /* NEXT BUTTON */
+  .next-btn {
+    display: none;
+    margin-top: 1rem;
+    padding: 11px 28px;
+    border: 0.5px solid var(--border2);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-size: 15px;
+    font-family: var(--font);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .next-btn:hover { background: var(--surface2); }
+
+  /* FINISH */
+  .finish {
+    display: none;
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+  .finish-title { font-size: 22px; font-weight: 600; margin-bottom: 0.5rem; color: var(--text); }
+  .finish-score { font-size: 56px; font-weight: 600; color: var(--accent); margin: 1rem 0 0.25rem; line-height: 1; }
+  .finish-sub { font-size: 15px; color: var(--text2); margin-bottom: 2rem; }
+  .finish-gif { max-width: 280px; border-radius: 12px; display: block; margin: 0 auto 2rem; }
+  .restart-btn {
+    padding: 12px 32px;
+    border: 0.5px solid var(--border2);
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    font-size: 15px;
+    font-family: var(--font);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .restart-btn:hover { opacity: 0.85; }
+
+  /* CONFETTI */
+  canvas#confetti { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; width: 100vw; height: 100vh; }
+
+  @media (max-width: 600px) {
+    header, main { padding: 1rem; }
+    .q-text { font-size: 15px; }
+    .title-row h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti"></canvas>
+
+<!-- QR MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>QR-Code / Link teilen</h2>
+    <p>Lade die HTML-Datei auf einen Webserver oder einen kostenlosen Dienst hoch, dann gib die URL ein.</p>
+    <div class="hint-box">
+      <strong>Kostenlose Optionen:</strong><br>
+      <a href="https://tiiny.host" target="_blank">tiiny.host</a> — HTML-Datei hochladen, Link erhalten<br>
+      <a href="https://netlify.com/drop" target="_blank">netlify.com/drop</a> — Datei reinziehen, sofort online<br>
+      <a href="https://pages.github.com" target="_blank">GitHub Pages</a> — für dauerhaften Einsatz
+    </div>
+    <div class="url-input-row">
+      <input class="url-input" id="url-input" type="text" placeholder="https://deine-url.tiiny.site" />
+      <button class="gen-btn" onclick="generateQR()">QR</button>
+    </div>
+    <div id="qr-output"></div>
+    <button class="modal-close" onclick="closeModal()">Schließen</button>
+  </div>
+</div>
+
+<header>
+  <div class="school-badge">
+    Elisabeth-Selbert-Gesamtschule, Bonn<br>
+    WP Informatik · Klasse 7 · Verschlüsselung
+  </div>
+  <button class="qr-trigger" onclick="openModal()">&#x2750; QR-Code / Link</button>
+</header>
+
+<main>
+  <div class="title-row">
+    <h1>Monoalphabetische Substitution</h1>
+    <div class="subtitle">Beantworte alle 6 Fragen. Bei Fehlern gibt es Tipps.</div>
+  </div>
+
+  <div id="quiz-area">
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+      <span class="progress-label" id="q-counter">1 / 6</span>
+      <span class="score-badge" id="score-badge">0 Punkte</span>
+    </div>
+    <div class="q-card" id="q-card"></div>
+    <button class="next-btn" id="next-btn">Weiter &rarr;</button>
+  </div>
+
+  <div class="finish" id="finish">
+    <div class="finish-title">Quiz abgeschlossen!</div>
+    <div class="finish-score" id="fs-score"></div>
+    <div class="finish-sub" id="fs-sub"></div>
+    <img class="finish-gif" id="fs-gif" src="" alt="Celebration" />
+    <button class="restart-btn" onclick="restart()">Nochmal &rarr;</button>
+  </div>
+</main>
+
+<script>
+const KL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const GH = 'QWERTZUIOPASDFGHJKLYXCVBNM'.split('');
+
+const KEY_TABLE = `
+<div class="table-wrap">
+<table class="key-table">
+<tr><th>Klartext</th>${KL.map(c=>`<td>${c}</td>`).join('')}</tr>
+<tr><th>Geheimtext</th>${GH.map(c=>`<td>${c}</td>`).join('')}</tr>
+</table></div>`;
+
+const QS = [
+  {
+    diff: 1, diffLabel: '☆ einfach',
+    label: 'Frage 1 — Grundbegriff',
+    text: 'Was ist das Besondere an der monoalphabetischen Substitution im Vergleich zu Caesar?',
+    type: 'mc',
+    opts: [
+      'Jeder Buchstabe wird durch eine Zahl ersetzt.',
+      'Die Zuordnung ist beliebig – nicht nur eine Verschiebung. Jeder Klartextbuchstabe wird immer durch denselben Geheimtextbuchstaben ersetzt.',
+      'Es wird ein zweites Alphabet verwendet, das von rechts nach links läuft.',
+      'Bei Caesar gibt es mehr mögliche Schlüssel.'
+    ],
+    correct: 1,
+    tip: 'Tipp: Bei Caesar ist der Schlüssel nur eine Zahl (1–25). Wie sieht der Schlüssel bei der monoalphabetischen Substitution aus?',
+    explain: 'Der Schlüssel ist eine vollständige Zuordnungstabelle (26 Einträge) – die Zuordnung kann völlig beliebig sein, nicht nur eine Verschiebung.'
+  },
+  {
+    diff: 1, diffLabel: '☆ einfach',
+    label: 'Frage 2 — Entschlüsseln',
+    text: 'Entschlüssele den folgenden Geheimtext mit der Schlüsseltabelle:\n\n<strong>OFD GTIDRFLQ OLY LOQR</strong>',
+    table: true,
+    type: 'text',
+    answer: 'IDA INFORMATIK IST INKA',
+    norm: v => v.toUpperCase().replace(/\s+/g,' ').trim(),
+    tip: 'Tipp: Lies die Tabelle rückwärts. Suche jeden Geheimtextbuchstaben in der unteren Zeile und ersetze ihn durch den Buchstaben darüber. O→I, F→N, D→M …',
+    explain: 'Klartext: IDA INFORMATIK IST INKA — du nutzt die Tabelle rückwärts (Geheimtext → Klartext).'
+  },
+  {
+    diff: 1, diffLabel: '☆ einfach',
+    label: 'Frage 3 — Verschlüsseln',
+    text: 'Verschlüssele <strong>INFORMATIK</strong> mit der Schlüsseltabelle.',
+    table: true,
+    type: 'text',
+    answer: 'OFZGKDQYOQ',
+    norm: v => v.toUpperCase().replace(/\s+/g,'').trim(),
+    tip: 'Tipp: Lies die Tabelle vorwärts. Suche jeden Klartextbuchstaben in der oberen Zeile und schreibe den Buchstaben darunter. I→O, N→F, F→Z …',
+    explain: 'Ergebnis: OFZGKDQYOQ — du verwendest die Tabelle vorwärts (Klartext → Geheimtext).'
+  },
+  {
+    diff: 2, diffLabel: '☆☆ mittel',
+    label: 'Frage 4 — Schlüsselmenge',
+    text: 'Wie viele verschiedene Schlüssel gibt es bei der monoalphabetischen Substitution?',
+    type: 'mc',
+    opts: [
+      '25 (wie bei Caesar)',
+      '26 (ein Schlüssel pro Buchstabe)',
+      '26! ≈ 4 × 10²⁶',
+      'Unendlich viele'
+    ],
+    correct: 2,
+    tip: 'Tipp: Wie viele Möglichkeiten gibt es, 26 verschiedene Buchstaben anzuordnen? Das ist eine Permutation: 26 × 25 × 24 × … × 1 = 26!',
+    explain: 'Es gibt 26! ≈ 4 × 10²⁶ mögliche Schlüssel – astronomisch viel mehr als die 25 Schlüssel von Caesar.'
+  },
+  {
+    diff: 3, diffLabel: '☆☆☆ anspruchsvoll',
+    label: 'Frage 5 — Sicherheit',
+    text: 'Warum lässt sich die monoalphabetische Substitution durch Häufigkeitsanalyse knacken, obwohl es 26! ≈ 4 × 10²⁶ mögliche Schlüssel gibt?',
+    type: 'mc',
+    opts: [
+      'Weil Computer schnell genug sind, alle Schlüssel durchzuprobieren.',
+      'Weil jeder Klartextbuchstabe immer denselben Geheimtextbuchstaben bekommt – die Häufigkeitsverteilung der Buchstaben bleibt erhalten.',
+      'Weil die Schlüsseltabelle meistens durch eine Verschiebung entsteht.',
+      'Weil nur 26 verschiedene Buchstaben im Deutschen vorkommen.'
+    ],
+    correct: 1,
+    tip: 'Tipp: Im Deutschen ist E immer der häufigste Buchstabe. Was passiert mit dieser Eigenschaft, wenn man jeden E immer durch denselben Geheimtextbuchstaben ersetzt?',
+    explain: 'Die Häufigkeitsverteilung bleibt erhalten: Der häufigste Geheimtextbuchstabe entspricht wahrscheinlich E – so kann man den Schlüssel Schritt für Schritt rekonstruieren.'
+  },
+  {
+    diff: 2, diffLabel: '☆☆ mittel',
+    label: 'Frage 6 — Vergleich',
+    text: 'Ist eine Häufigkeitsanalyse bei der monoalphabetischen Substitution grundsätzlich möglich?',
+    type: 'mc',
+    opts: [
+      'Nein – 26! Schlüssel sind zu viele, Häufigkeitsanalyse hilft nicht.',
+      'Ja – aber es geht schneller als bei Caesar.',
+      'Ja – mit etwas mehr Aufwand als bei Caesar, aber grundsätzlich möglich.',
+      'Nur bei Texten mit mehr als 1000 Buchstaben.'
+    ],
+    correct: 2,
+    tip: 'Tipp: Häufigkeitsanalyse nutzt nicht Brute-Force, sondern Sprachmuster. Ist dieses Prinzip auch hier anwendbar?',
+    explain: 'Ja, möglich – mit etwas mehr Aufwand. Sicherheitsstufe: unsicher (knackbar).'
+  }
+];
+
+let cur=0, score=0, answered=false, confettiId=null;
+
+function render() {
+  const q = QS[cur];
+  answered = false;
+  document.getElementById('q-counter').textContent = `${cur+1} / ${QS.length}`;
+  document.getElementById('progress').style.width = `${(cur/QS.length)*100}%`;
+  document.getElementById('score-badge').textContent = `${score} Punkte`;
+  document.getElementById('next-btn').style.display = 'none';
+
+  let h = `<div class="q-meta">
+    <span class="q-num">Frage ${cur+1}</span>
+    <span class="diff-badge diff-${q.diff}">${q.diffLabel}</span>
+  </div>`;
+  h += `<div class="q-text">${q.text.replace(/\n/g,'<br>')}</div>`;
+  if (q.table) h += KEY_TABLE;
+
+  if (q.type === 'mc') {
+    h += `<div class="options">`;
+    q.opts.forEach((o,i) => {
+      h += `<button class="opt-btn" onclick="checkMC(${i})">${o}</button>`;
+    });
+    h += `</div>`;
+  } else {
+    h += `<div class="input-row">
+      <input type="text" class="ans-input" id="ainput" placeholder="Antwort eingeben …" maxlength="60" onkeydown="if(event.key==='Enter')checkText()">
+      <button class="check-btn" id="chkbtn" onclick="checkText()">Prüfen</button>
+    </div>`;
+  }
+  h += `<div id="fb"></div>`;
+  document.getElementById('q-card').innerHTML = h;
+  const inp = document.getElementById('ainput');
+  if (inp) setTimeout(()=>inp.focus(),50);
+}
+
+function checkMC(i) {
+  if (answered) return;
+  answered = true;
+  const q = QS[cur];
+  document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
+  document.querySelectorAll('.opt-btn')[q.correct].classList.add('correct');
+  const ok = i === q.correct;
+  if (!ok) document.querySelectorAll('.opt-btn')[i].classList.add('wrong');
+  if (ok) score++;
+  showFB(ok, q, null);
+}
+
+function checkText() {
+  if (answered) return;
+  const q = QS[cur];
+  const el = document.getElementById('ainput');
+  if (!el || !el.value.trim()) return;
+  answered = true;
+  el.disabled = true;
+  const btn = document.getElementById('chkbtn');
+  if (btn) btn.disabled = true;
+  const norm = q.norm(el.value);
+  const expected = q.norm(q.answer);
+  const ok = norm === expected;
+  if (ok) score++;
+  showFB(ok, q, el.value);
+}
+
+function showFB(ok, q, userVal) {
+  let h = '';
+  if (ok) {
+    h += `<div class="feedback ok">Richtig! ${q.explain}</div>`;
+  } else {
+    h += `<div class="feedback bad">Leider falsch.${userVal ? ' Deine Antwort: <strong style="font-family:var(--mono)">' + userVal.toUpperCase() + '</strong>' : ''}</div>`;
+    h += `<div class="tip">${q.tip}</div>`;
+    h += `<div class="answer-reveal">Richtige Antwort: <strong>${q.answer !== undefined ? q.answer : q.opts[q.correct]}</strong><br><span style="color:var(--text2);font-size:13px">${q.explain}</span></div>`;
+  }
+  document.getElementById('fb').innerHTML = h;
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  cur++;
+  if (cur < QS.length) {
+    render();
+  } else {
+    showFinish();
+  }
+});
+
+function showFinish() {
+  document.getElementById('progress').style.width = '100%';
+  document.getElementById('quiz-area').style.display = 'none';
+  const fin = document.getElementById('finish');
+  fin.style.display = 'block';
+  const pct = score/QS.length;
+  document.getElementById('fs-score').textContent = `${score} / ${QS.length}`;
+  const labels = ['Nochmal versuchen – du schaffst das!','Gut begonnen – lies die Tipps nochmal durch.','Solide Leistung!','Gut gemacht!','Sehr gut!','Perfekt – alles richtig!'];
+  document.getElementById('fs-sub').textContent = labels[score] || labels[0];
+  document.getElementById('fs-gif').src = pct >= 0.5
+    ? 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdHJjYnV6ODhjdnBoY3VhdnZyNjY3ZjNicjdydGJkNjAwOHU4bmoxYSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/x73W03Q8lfTBfeGcY7/giphy.gif'
+    : '';
+  if (pct >= 0.5) startConfetti();
+}
+
+function restart() {
+  cur=0; score=0;
+  stopConfetti();
+  document.getElementById('finish').style.display='none';
+  document.getElementById('quiz-area').style.display='block';
+  render();
+}
+
+// CONFETTI
+function startConfetti() {
+  const c = document.getElementById('confetti');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  const ctx = c.getContext('2d');
+  const cols = ['#7c6ff7','#4ade80','#60a5fa','#fbbf24','#f87171','#a78bfa'];
+  const ps = Array.from({length:140},()=>({
+    x:Math.random()*c.width, y:Math.random()*-c.height,
+    r:Math.random()*5+3, d:Math.random()*2.5+1,
+    col:cols[Math.floor(Math.random()*cols.length)],
+    t:0, ts:Math.random()*0.06+0.04
+  }));
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    ps.forEach(p=>{
+      p.y+=p.d; p.t+=p.ts;
+      if(p.y>c.height){p.y=-10;p.x=Math.random()*c.width;}
+      ctx.beginPath(); ctx.lineWidth=p.r; ctx.strokeStyle=p.col;
+      ctx.moveTo(p.x+Math.sin(p.t)*12+p.r/2,p.y);
+      ctx.lineTo(p.x+Math.sin(p.t)*12,p.y+p.r*2.5);
+      ctx.stroke();
+    });
+    confettiId=requestAnimationFrame(draw);
+  }
+  draw();
+  setTimeout(stopConfetti,6000);
+}
+function stopConfetti(){
+  if(confettiId) cancelAnimationFrame(confettiId);
+  const c=document.getElementById('confetti');
+  c.getContext('2d').clearRect(0,0,c.width,c.height);
+  confettiId=null;
+}
+
+// QR MODAL
+function openModal(){ document.getElementById('modal-bg').classList.add('open'); }
+function closeModal(){ document.getElementById('modal-bg').classList.remove('open'); }
+let qrInst = null;
+function generateQR(){
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return;
+  const out = document.getElementById('qr-output');
+  out.innerHTML = '';
+  if (qrInst) { qrInst = null; }
+  new QRCode(out, { text: url, width: 220, height: 220, colorDark:'#e8eaf6', colorLight:'#1a1d27', correctLevel: QRCode.CorrectLevel.M });
+}
+
+render();
+</script>
+</body>
+</html>
